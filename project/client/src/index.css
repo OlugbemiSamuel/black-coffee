@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------
+   Black Coffee Lagos — design tokens
+   --------------------------------------------------------------- */
+@theme {
+  --color-brand-primary: #1a1a2e;
+  --color-brand-secondary: #16213e;
+  --color-brand-accent: #e94560;
+  --color-brand-light: #f4f1eb;
+  --color-brand-dark: #0d0d23;
+
+  --font-display: "Georgia", "Times New Roman", serif;
+  --font-body: "Segoe UI", "Inter", system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------
+   Base
+   --------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--color-brand-primary);
+  color: var(--color-brand-light);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Nicer autofill styling for the dark inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #f4f1eb;
+  -webkit-box-shadow: 0 0 0 1000px #1e1e35 inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Native date/file pickers should be visible on dark backgrounds */
+input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  border: 1px solid rgba(244, 241, 235, 0.25);
+  background: rgba(244, 241, 235, 0.08);
+  color: #f4f1eb;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: rgba(244, 241, 235, 0.16);
+}
+
+/* ---------------------------------------------------------------
+   Small utilities
+   --------------------------------------------------------------- */
+@utility text-gradient-accent {
+  background-image: linear-gradient(135deg, #e94560 0%, #ff8a5c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@utility glass-panel {
+  background-color: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+/* ---------------------------------------------------------------
+   Print: the 4x6in guest card is rendered in a separate window,
+   so these rules only matter if a card is printed in-place.
+   --------------------------------------------------------------- */
+@page {
+  size: 4in 6in;
+  margin: 0;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+    color: #1a1a2e;
+  }
+}
