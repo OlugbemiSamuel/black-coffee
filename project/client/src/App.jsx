@@ -21,18 +21,98 @@ function readFileAsDataUrl(file) {
   });
 }
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  })[character]);
+function GuestCardPreview({ guestId }) {
+  const [guest, setGuest] = useState(null);
+  const [qrCode, setQrCode] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [printError, setPrintError] = useState('');
+  const [pictureFailed, setPictureFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCard() {
+      try {
+        const guestData = await readJson(await fetch(`/api/guests/${guestId}`));
+        const code = await QRCode.toDataURL(String(guestData.id), {
+          width: 180,
+          margin: 1,
+          color: { dark: '#1a1a2e', light: '#ffffff' },
+        });
+        if (active) {
+          setGuest(guestData);
+          setQrCode(code);
+        }
+      } catch (requestError) {
+        if (active) setError(requestError.message || 'Could not load this guest card.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadCard();
+    return () => {
+      active = false;
+    };
+  }, [guestId]);
+
+  async function handlePrint() {
+    window.print();
+    try {
+      await readJson(await fetch(`/api/guests/${guestId}/prints`, {
+        method: 'POST',
+      }));
+    } catch (requestError) {
+      setPrintError(`Could not record print count: ${requestError.message || 'Request failed.'}`);
+    }
+  }
+
+  return (
+    <main className="guest-card-preview-screen">
+      <a href="/admin" className="guest-card-preview-back">&larr; Back to admin</a>
+      {loading && <p className="text-sm text-white/70">Preparing guest card…</p>}
+      {error && <p role="alert" className="rounded-lg bg-red-500/10 p-4 text-red-300">{error}</p>}
+      {guest && qrCode && (
+        <article className="guest-card-preview-card">
+          <p className="guest-card-preview-brand">BLACK COFFEE</p>
+          <div className="guest-card-preview-event">Lagos Event &bull; Guest Card</div>
+          <div className="guest-card-preview-picture">
+            {guest.picture && !pictureFailed ? (
+              <img
+                src={guest.picture}
+                alt={guest.name}
+                onError={() => setPictureFailed(true)}
+              />
+            ) : (
+              <span>&mdash;</span>
+            )}
+          </div>
+          <h1 className="guest-card-preview-name">{guest.name}</h1>
+          <p className="guest-card-preview-department">{guest.department}</p>
+          <img className="guest-card-preview-qr" src={qrCode} alt="Guest QR code" />
+          <button
+            type="button"
+            className="guest-card-preview-print"
+            onClick={handlePrint}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7zM17 12h.01" />
+            </svg>
+            PRINT THIS CARD
+          </button>
+          {printError && <p role="alert" className="guest-card-preview-error">{printError}</p>}
+        </article>
+      )}
+    </main>
+  );
 }
 
 export default function App() {
-  const isAdmin = window.location.pathname.replace(/\/+$/, '') === '/admin';
+  const path = window.location.pathname.replace(/\/+$/, '');
+  const isAdmin = path === '/admin';
+  const previewMatch = path.match(/^\/admin\/print\/(\d+)$/);
+  const previewGuestId = previewMatch ? previewMatch[1] : null;
   const [guests, setGuests] = useState([]);
   const [printedToday, setPrintedToday] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -67,7 +147,7 @@ export default function App() {
         if (active) setPrintedToday(printData.count);
       })
       .catch((requestError) => {
-        if (active) setPrintError(requestError.message || 'Could not load print count.');
+        if (active) setPrintError(`Could not load print count: ${requestError.message || 'Request failed.'}`);
       });
 
     return () => {
@@ -129,156 +209,7 @@ export default function App() {
     }
   }
 
-  async function handlePrint(guest) {
-    setError('');
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      setError('The print window was blocked. Allow pop-ups for this site and try again.');
-      return;
-    }
-
-    try {
-      const printGuest = await readJson(await fetch(`/api/guests/${guest.id}`));
-      const qrCode = await QRCode.toDataURL(String(printGuest.id), {
-        width: 180,
-        margin: 1,
-        color: { dark: '#1a1a2e', light: '#ffffff' },
-      });
-      const pictureMarkup = printGuest.picture
-        ? `<img id="guest-picture" src="${escapeHtml(printGuest.picture)}" alt="${escapeHtml(printGuest.name)}">`
-        : '<div class="picture-placeholder">&mdash;</div>';
-
-      const cardHtml = `<!doctype html>
-        <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Guest Card - ${escapeHtml(printGuest.name)}</title>
-            <style>
-              @page { size: 4in 6in; margin: 0; }
-              * { box-sizing: border-box; }
-              body {
-                margin: 0;
-                width: 4in;
-                height: 6in;
-                padding: .28in;
-                color: #1a1a2e;
-                background: #f4f1eb;
-                font-family: Georgia, "Times New Roman", serif;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              .card {
-                width: 100%;
-                height: 100%;
-                border: 1px solid #e94560;
-                padding: .16in;
-                display: flex;
-                align-items: center;
-                flex-direction: column;
-                text-align: center;
-              }
-              .brand {
-                margin: 0;
-                font-size: 19px;
-                font-weight: 700;
-                letter-spacing: 3px;
-              }
-              .event {
-                width: 100%;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin: 7px 0 16px;
-                color: #666;
-                font: 11px Arial, sans-serif;
-                white-space: nowrap;
-              }
-              .event::before, .event::after {
-                content: "";
-                height: 1px;
-                flex: 1;
-                background: #e94560;
-              }
-              .portrait {
-                width: 100%;
-                height: 2.05in;
-                flex: 0 0 2.05in;
-                overflow: hidden;
-                background: #e8e5df;
-              }
-              .portrait img {
-                display: block;
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-              }
-              .picture-placeholder {
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #777;
-                font: 24px Arial, sans-serif;
-              }
-              h1 {
-                margin: 14px 0 4px;
-                font-size: 20px;
-                line-height: 1.15;
-                overflow-wrap: anywhere;
-              }
-              .department {
-                margin: 0;
-                color: #777;
-                font: 14px Arial, sans-serif;
-              }
-              .qr-code {
-                width: 1.05in;
-                height: 1.05in;
-                margin-top: 12px;
-              }
-            </style>
-          </head>
-          <body>
-            <main class="card">
-              <p class="brand">BLACK COFFEE</p>
-              <div class="event">Lagos Event &bull; Guest Card</div>
-              <div class="portrait">${pictureMarkup}</div>
-              <h1>${escapeHtml(printGuest.name)}</h1>
-              <p class="department">${escapeHtml(printGuest.department)}</p>
-              <img class="qr-code" src="${qrCode}" alt="Guest QR code">
-            </main>
-            <script>
-              const picture = document.getElementById('guest-picture');
-              if (picture) {
-                picture.addEventListener('error', () => {
-                  const placeholder = document.createElement('div');
-                  placeholder.className = 'picture-placeholder';
-                  placeholder.textContent = '\\u2014';
-                  picture.replaceWith(placeholder);
-                }, { once: true });
-              }
-              window.addEventListener('load', () => {
-                setTimeout(() => { window.focus(); window.print(); }, 150);
-              }, { once: true });
-            </script>
-          </body>
-        </html>`;
-
-      printWindow.document.open();
-      printWindow.document.write(cardHtml);
-      printWindow.document.close();
-
-      const printData = await readJson(await fetch(`/api/guests/${guest.id}/prints`, {
-        method: 'POST',
-      }));
-      setPrintedToday(printData.count);
-    } catch (requestError) {
-      printWindow.close();
-      setError(requestError.message || 'Could not prepare the guest card for printing.');
-    }
-  }
+  if (previewGuestId) return <GuestCardPreview guestId={previewGuestId} />;
 
   if (!isAdmin && registered) {
     return (
@@ -386,13 +317,12 @@ export default function App() {
                       <td className="px-4 py-3 font-medium">{guest.name}</td>
                       <td className="px-4 py-3 text-white/70">{guest.department}</td>
                       <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => handlePrint(guest)}
+                        <a
+                          href={`/admin/print/${guest.id}`}
                           className="rounded-lg border border-brand-accent/30 px-4 py-2 text-xs font-medium text-brand-accent hover:bg-brand-accent/10"
                         >
                           Print Card
-                        </button>
+                        </a>
                       </td>
                     </tr>
                   ))}
@@ -404,7 +334,7 @@ export default function App() {
               <p className="text-sm text-white/50">
                 Cards printed today: <span className="font-medium text-white">{printedToday}</span>
               </p>
-              {printError && <p role="alert" className="mt-2 text-sm text-red-300">Could not load print count: {printError}</p>}
+              {printError && <p role="alert" className="mt-2 text-sm text-red-300">{printError}</p>}
             </footer>
           </section>
         </main>
