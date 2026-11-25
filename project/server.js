@@ -199,14 +199,14 @@ app.get('/api/guests', (_req, res) => {
   });
 });
 
-// Search by name (case-insensitive, partial match)
-app.get('/api/guests/search/:name', (req, res) => {
-  const term = String(req.params.name || '').trim();
+// Search by name or email (case-insensitive, partial match)
+app.get('/api/guests/search/:term', (req, res) => {
+  const term = String(req.params.term || '').trim();
   if (!term) return res.json([]);
 
   db.all(
-    'SELECT * FROM guests WHERE name LIKE ? COLLATE NOCASE ORDER BY name ASC',
-    [`%${term}%`],
+    'SELECT * FROM guests WHERE name LIKE ? COLLATE NOCASE OR email LIKE ? COLLATE NOCASE ORDER BY name ASC',
+    [`%${term}%`, `%${term}%`],
     (err, rows) => {
       if (err) {
         console.error('Search error:', err);

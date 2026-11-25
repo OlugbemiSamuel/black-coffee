@@ -36,6 +36,17 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+select {
+  color: #f4f1eb;
+  color-scheme: dark;
+  background-color: #1e1e35;
+}
+
+select option {
+  color: #f4f1eb;
+  background-color: #1a1a2e;
+}
+
 /* Nicer autofill styling for the dark inputs */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

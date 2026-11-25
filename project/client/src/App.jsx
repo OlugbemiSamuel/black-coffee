@@ -292,7 +292,7 @@ export default function App() {
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search guest by name…"
+                placeholder="Search by name or email…"
                 className={inputClassName}
               />
               <button type="submit" disabled={busy} className="rounded-lg bg-brand-accent px-5 py-3 font-medium text-brand-primary disabled:opacity-60">
