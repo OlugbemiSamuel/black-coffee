@@ -11,6 +11,7 @@ database.db-*
 .env.*
 !.env.example
 *.log
+black-coffee-namecheap-cpanel.zip
 *.new
 .vscode/
 .idea/
