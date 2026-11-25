@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 
-const DEPARTMENTS = ['Marketing', 'Sales', 'Operations', 'Guest Services', 'Other'];
+const DEPARTMENTS = ['Marketing', 'Sales', 'Operations', 'Software Engineer', 'Guest Services', 'Other'];
 
 const inputClassName =
   'w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 transition-all focus:border-brand-accent focus:outline-none focus:ring-1 focus:ring-brand-accent';
@@ -74,35 +74,37 @@ function GuestCardPreview({ guestId }) {
       {loading && <p className="text-sm text-white/70">Preparing guest card…</p>}
       {error && <p role="alert" className="rounded-lg bg-red-500/10 p-4 text-red-300">{error}</p>}
       {guest && qrCode && (
-        <article className="guest-card-preview-card">
-          <p className="guest-card-preview-brand">BLACK COFFEE</p>
-          <div className="guest-card-preview-event">Lagos Event &bull; Guest Card</div>
-          <div className="guest-card-preview-picture">
-            {guest.picture && !pictureFailed ? (
-              <img
-                src={guest.picture}
-                alt={guest.name}
-                onError={() => setPictureFailed(true)}
-              />
-            ) : (
-              <span>&mdash;</span>
-            )}
-          </div>
-          <h1 className="guest-card-preview-name">{guest.name}</h1>
-          <p className="guest-card-preview-department">{guest.department}</p>
-          <img className="guest-card-preview-qr" src={qrCode} alt="Guest QR code" />
-          <button
-            type="button"
-            className="guest-card-preview-print"
-            onClick={handlePrint}
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7zM17 12h.01" />
-            </svg>
-            PRINT THIS CARD
-          </button>
+        <>
+          <article className="guest-card-preview-card">
+            <p className="guest-card-preview-brand">BLACK COFFEE</p>
+            <div className="guest-card-preview-event">Lagos Event</div>
+            <div className="guest-card-preview-picture">
+              {guest.picture && !pictureFailed ? (
+                <img
+                  src={guest.picture}
+                  alt={guest.name}
+                  onError={() => setPictureFailed(true)}
+                />
+              ) : (
+                <span>&mdash;</span>
+              )}
+            </div>
+            <h1 className="guest-card-preview-name">{guest.name}</h1>
+            <p className="guest-card-preview-department">{guest.department}</p>
+            <img className="guest-card-preview-qr" src={qrCode} alt="Guest QR code" />
+            <button
+              type="button"
+              className="guest-card-preview-print"
+              onClick={handlePrint}
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4h-2M7 14h10v7H7zM17 12h.01" />
+              </svg>
+              PRINT THIS CARD
+            </button>
+          </article>
           {printError && <p role="alert" className="guest-card-preview-error">{printError}</p>}
-        </article>
+        </>
       )}
     </main>
   );

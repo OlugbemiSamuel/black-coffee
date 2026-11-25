@@ -98,6 +98,7 @@ input[type="file"]::file-selector-button:hover {
 .guest-card-preview-screen {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
@@ -230,12 +231,11 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .guest-card-preview-error {
-  position: absolute;
-  top: calc(100% + 28px);
-  width: 100%;
-  margin: 0;
+  max-width: 440px;
+  margin: 12px 0 0;
   color: #ffb4b4;
-  font: 12px Arial, sans-serif;
+  font: 12px/1.5 var(--font-body);
+  text-align: center;
 }
 
 @media print {
