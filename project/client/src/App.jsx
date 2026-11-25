@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 
 const DEPARTMENTS = ['Marketing', 'Sales', 'Operations', 'Software Engineer', 'Guest Services', 'Other'];
+const EVENT_NAME = 'Lagos Event';
 
 const inputClassName =
   'w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 transition-all focus:border-brand-accent focus:outline-none focus:ring-1 focus:ring-brand-accent';
@@ -21,6 +22,47 @@ function readFileAsDataUrl(file) {
   });
 }
 
+function GuestScanCard({ guestId }) {
+  const [guest, setGuest] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    fetch(`/api/guests/${guestId}/card`)
+      .then(readJson)
+      .then((guestData) => {
+        if (active) setGuest(guestData);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.message || 'Could not load this guest card.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [guestId]);
+
+  return (
+    <main className="guest-scan-screen">
+      {loading && <p>Loading guest card…</p>}
+      {error && <p role="alert" className="guest-scan-error">{error}</p>}
+      {guest && (
+        <article className="guest-scan-card">
+          <p className="guest-scan-brand">BLACK COFFEE</p>
+          <p className="guest-scan-event">{EVENT_NAME}</p>
+          <h1>{guest.name}</h1>
+          <p className="guest-scan-email">{guest.email}</p>
+        </article>
+      )}
+    </main>
+  );
+}
+
 function GuestCardPreview({ guestId }) {
   const [guest, setGuest] = useState(null);
   const [qrCode, setQrCode] = useState('');
@@ -35,7 +77,8 @@ function GuestCardPreview({ guestId }) {
     async function loadCard() {
       try {
         const guestData = await readJson(await fetch(`/api/guests/${guestId}`));
-        const code = await QRCode.toDataURL(String(guestData.id), {
+        const scanUrl = `${window.location.origin}/guest/${guestData.id}`;
+        const code = await QRCode.toDataURL(scanUrl, {
           width: 180,
           margin: 1,
           color: { dark: '#1a1a2e', light: '#ffffff' },
@@ -77,7 +120,7 @@ function GuestCardPreview({ guestId }) {
         <>
           <article className="guest-card-preview-card">
             <p className="guest-card-preview-brand">BLACK COFFEE</p>
-            <div className="guest-card-preview-event">Lagos Event</div>
+            <div className="guest-card-preview-event">{EVENT_NAME}</div>
             <div className="guest-card-preview-picture">
               {guest.picture && !pictureFailed ? (
                 <img
@@ -115,6 +158,8 @@ export default function App() {
   const isAdmin = path === '/admin';
   const previewMatch = path.match(/^\/admin\/print\/(\d+)$/);
   const previewGuestId = previewMatch ? previewMatch[1] : null;
+  const scanMatch = path.match(/^\/guest\/(\d+)$/);
+  const scanGuestId = scanMatch ? scanMatch[1] : null;
   const [guests, setGuests] = useState([]);
   const [printedToday, setPrintedToday] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -211,6 +256,7 @@ export default function App() {
     }
   }
 
+  if (scanGuestId) return <GuestScanCard guestId={scanGuestId} />;
   if (previewGuestId) return <GuestCardPreview guestId={previewGuestId} />;
 
   if (!isAdmin && registered) {

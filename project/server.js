@@ -217,6 +217,22 @@ app.get('/api/guests/search/:term', (req, res) => {
   );
 });
 
+// Public scan-card data deliberately excludes phone, department, and photo.
+app.get('/api/guests/:id/card', (req, res) => {
+  db.get(
+    'SELECT name, email FROM guests WHERE id = ?',
+    [req.params.id],
+    (err, row) => {
+      if (err) {
+        console.error('Scan card lookup error:', err);
+        return res.status(500).json({ error: 'Could not load guest card.' });
+      }
+      if (!row) return res.status(404).json({ error: 'Guest not found' });
+      res.json(row);
+    }
+  );
+});
+
 // Single guest (includes picture as base64 for print cards)
 app.get('/api/guests/:id', (req, res) => {
   db.get('SELECT * FROM guests WHERE id = ?', [req.params.id], (err, row) => {
